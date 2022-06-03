@@ -1,9 +1,6 @@
-// 待完善
 // 必须安装 iptables 否则会报错：getsockopt error: Protocol not available
-// sudo iptables -t nat -A PREROUTING -p tcp --dport 12345 -j REDIRECT --to-ports 1234
-// sudo iptables -t nat -I OUTPUT -p tcp -o lo --dport 12345 -j REDIRECT --to-ports 1234 # 支持本地回环
-// gcc ./src/c/03-iptable/packet-info.c && sudo ./a.out
-// nc localhost 1234
+// 运行： gcc ./src/c/03-iptable/test-iptable-server.c && sudo ./a.out
+// 测试命令： nc localhost 1234
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -11,8 +8,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
-// https://elixir.bootlin.com/linux/v5.15.3/source/include/uapi/linux/netfilter_ipv4.h#L52
 #include<linux/netfilter_ipv4.h>
 
 #define BUFFER_SIZE 1024
@@ -71,7 +68,7 @@ int main(int argc, char *argv[])
             exit(-1);
         }
 
-        // 获取到的是接收到的包上的 dest ip 和 port
+        // 获取到的是接收到的数据包中的 dest ip 和 port
         n = getsockname(cfd, (struct sockaddr *)&dest_addr, &dest_addr_len);
         if (n < 0)
         {
@@ -81,26 +78,18 @@ int main(int argc, char *argv[])
 
         // 获取到的是 nat 之前的原始的 dest ip 和 port
         n = getsockopt(cfd, SOL_IP, SO_ORIGINAL_DST, &original_dest_addr, &original_dest_addr_len);
-        if (n < 0) 
-        {
-            perror("getsockopt error");
-            exit(-1);
-        }
-
-        printf("source{ip: %s, port: %d};  dest{ip: %s, port: %d}; original dest{ip: %s, port: %d}\n", 
-            inet_ntoa(source_addr.sin_addr), ntohs(source_addr.sin_port), 
-            inet_ntoa(dest_addr.sin_addr), ntohs(dest_addr.sin_port),
-            inet_ntoa(original_dest_addr.sin_addr), ntohs(original_dest_addr.sin_port)
-        );
-
+        // 将信息发送给客户端
         char send_buff[BUFFER_SIZE];
         memset(send_buff, 0, sizeof(send_buff));
-        sprintf(send_buff, "source{ip: %s, port: %d};  dest{ip: %s, port: %d}; original dest{ip: %s, port: %d}\n",
-            inet_ntoa(source_addr.sin_addr), ntohs(source_addr.sin_port),
-            inet_ntoa(dest_addr.sin_addr), ntohs(dest_addr.sin_port),
-            inet_ntoa(original_dest_addr.sin_addr), ntohs(original_dest_addr.sin_port)
-        );
+        sprintf(send_buff, "source{ip: %s, port: %d};  dest{ip: %s, port: %d}; original dest{%s: %s, %s: %d}\n",
+                inet_ntoa(source_addr.sin_addr), ntohs(source_addr.sin_port),
+                inet_ntoa(dest_addr.sin_addr), ntohs(dest_addr.sin_port),
+                n < 0 ? "strerror" : "ip",
+                n < 0 ? strerror(errno) : inet_ntoa(original_dest_addr.sin_addr), // 如果上一步报错返回错误信息
+                n < 0 ? "errno" : "port",
+                n < 0 ? errno : ntohs(original_dest_addr.sin_port));
         send(cfd, send_buff, strlen(send_buff), 0);
+        // 关闭 TCP 连接
         close(cfd);
     }
 }
