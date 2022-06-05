@@ -80,10 +80,19 @@ int main(int argc, char *argv[])
         n = getsockopt(cfd, SOL_IP, SO_ORIGINAL_DST, &original_dest_addr, &original_dest_addr_len);
         // 将信息发送给客户端
         char send_buff[BUFFER_SIZE];
+
+        // 不能一次性调用 sprintf ，原因是 inet_ntoa 共享一个 cache。
+        // https://stackoverflow.com/questions/48799606/inet-ntoa-gives-the-same-result-when-called-with-two-different-addresses
         memset(send_buff, 0, sizeof(send_buff));
-        sprintf(send_buff, "source{ip: %s, port: %d};  dest{ip: %s, port: %d}; original dest{%s: %s, %s: %d}\n",
-                inet_ntoa(source_addr.sin_addr), ntohs(source_addr.sin_port),
-                inet_ntoa(dest_addr.sin_addr), ntohs(dest_addr.sin_port),
+        sprintf(send_buff, "source{ip: %s, port: %d}; ",
+                inet_ntoa(source_addr.sin_addr), ntohs(source_addr.sin_port));
+        send(cfd, send_buff, strlen(send_buff), 0);
+        memset(send_buff, 0, sizeof(send_buff));
+        sprintf(send_buff, "dest{ip: %s, port: %d}; ",
+                inet_ntoa(dest_addr.sin_addr), ntohs(dest_addr.sin_port));
+        send(cfd, send_buff, strlen(send_buff), 0);
+        memset(send_buff, 0, sizeof(send_buff));
+        sprintf(send_buff, "original dest{%s: %s, %s: %d}\n",
                 n < 0 ? "strerror" : "ip",
                 n < 0 ? strerror(errno) : inet_ntoa(original_dest_addr.sin_addr), // 如果上一步报错返回错误信息
                 n < 0 ? "errno" : "port",
