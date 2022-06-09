@@ -1,5 +1,5 @@
 // 必须安装 iptables 否则会报错：getsockopt error: Protocol not available
-// 运行： gcc ./src/c/03-iptable/test-iptable-server.c && sudo ./a.out
+// 运行： gcc ./src/c/03-iptables/test-iptables-server.c && sudo ./a.out
 // 测试命令： nc localhost 1234
 #include <sys/socket.h>
 #include <netinet/in.h>
