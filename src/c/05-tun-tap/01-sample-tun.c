@@ -1,4 +1,4 @@
-// `
+// gcc ./src/c/05-tun-tap/01-sample-tun.c && sudo ./a.out
 // 修改自：https://segmentfault.com/a/1190000009249039
 #include <net/if.h>
 #include <sys/ioctl.h>

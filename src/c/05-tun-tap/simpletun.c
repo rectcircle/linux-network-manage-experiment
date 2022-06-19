@@ -1,3 +1,5 @@
+// server: gcc ./src/c/05-tun-tap/simpletun.c && sudo ./a.out -d -i tun-server -s
+// client: gcc ./src/c/05-tun-tap/simpletun.c && sudo ./a.out -d -i tun-client -c 192.168.57.3
 // https://github.com/gregnietsky/simpletun/blob/master/simpletun.c
 /**************************************************************************
  * simpletun.c                                                            *
